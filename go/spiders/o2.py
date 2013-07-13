@@ -16,7 +16,8 @@ class MySpider(BaseSpider):
     name = 'www.o2.co.uk'
     allowed_domains = ['www.o2.co.uk']
     start_urls = [
-        'https://www.o2.co.uk/shop/tariffs/#commitmentLengths=24+Months&monthlyCost=to_%C2%A320&minutes=from_50&texts=from_Unlimited&data=from_100MB&page=1'
+        'https://www.o2.co.uk/shop/tariffs/?commitmentLengthValues=24%20Months',
+        'https://www.o2.co.uk/shop/tariffs/?commitmentLengthValues=18%20Months'
     ]
 
     def parse(self, response):
@@ -40,8 +41,12 @@ class MySpider(BaseSpider):
                 #print plan.extract()
 
                 monthlyCost = plan.select('td[contains(@class, "monthlyCost")]/text()').extract()
-                print monthlyCost
+                minutes = plan.select('td/span[contains(@class, "minsVal")]/text()').extract()
+                messages = plan.select('td/span[contains(@class, "textsVal")]/text()').extract()
+                data = plan.select('td/span[contains(@class, "dataAllowance")]/text()').extract()
+                extras = plan.select('td/span[contains(@class, "extras")]/span/text()').extract()
 
+                print monthlyCost + minutes + messages + data + extras
 
                 #link = site.select('a/@href').extract()
                 #desc = site.select('text()').extract()
