@@ -13,9 +13,9 @@ def stop_reactor():
 
 dispatcher.connect(stop_reactor, signal=signals.spider_closed)
 
-spider = MySpider(domain='www.o2.co.uk')
+spider = MySpider()
 crawler = Crawler(Settings())
 crawler.configure()
 crawler.crawl(spider)
 crawler.start()
-reactor.run() # the script will block here
+reactor.run()
