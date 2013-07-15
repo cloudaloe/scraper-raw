@@ -11,8 +11,9 @@ from scrapy import log # This module is useful for printing out debug informatio
 from scrapy.spider import BaseSpider
 from scrapy.selector import HtmlXPathSelector
 from scrapy.http import FormRequest
+from scrapy.item import Item, Field
 from sys import exit
-
+import util
 
 class MySpider(BaseSpider):
     name = 'www.o2.co.uk'
@@ -28,14 +29,14 @@ class MySpider(BaseSpider):
         phone details handler
         '''
 
-        self.log('Parsing phoness....')
+        self.log('Parsing phones....')
 
         hxs = HtmlXPathSelector(response)
         phones = hxs.select('//ul[@id="handsetList"]/li')
         print len(phones)
 
         if not phones:
-            spider_broken_exit(stage='locating phones on phones page', details='no phones located' )
+            util.spider_broken_exit(stage='locating phones on phones page', details='no phones located' )
         else:
             for phone in phones:
                 brand = phone.select('.//span[contains(@class, "brand")]/text()').extract()
@@ -44,18 +45,21 @@ class MySpider(BaseSpider):
 
                 print brand + model + picture_url
 
+    def follow_form_link(self, form):
+        print('following form link....')
+        form_field_names = form.select('input/@name') .extract()
+        form_field_values = form.select('input/@value') .extract()
+        form_fields = dict(zip(form_field_names, form_field_values))
+        #form_fields = {'tariffId' : 'a7f2c7b8-cfad-403e-9ec1-05fd997ee0d5', 'dataAllowanceName' : '100MB'}
+
+        print form_fields
+        return [FormRequest(url="https://www.o2.co.uk/shop/phones/", method='GET', formdata=form_fields, callback=self.parse_phones)]
+
     def parse(self, response):
 
         '''
         plans page handler
         '''
-
-        def spider_warning(stage):
-            self.log('Spider walk warning %s' % stage)
-
-        def spider_broken_exit(stage, details):
-            self.log('Spider walk appears to be broken at %s. %s.' % (stage, details))
-            exit() # to be refined
 
         self.log('Obtained response from %s' % response.url)
         self.log('Parsing plans....')
@@ -63,7 +67,7 @@ class MySpider(BaseSpider):
         plans = hxs.select('//tr[td[contains(@class, "monthlyCost")]]')
 
         if not plans:
-            spider_broken_exit(stage='locating plans on plans page', details='no plans located' )
+            util.spider_broken_exit(stage='locating plans on plans page', details='no plans located' )
         else:
             for plan in plans:
                 #print plan.extract()
@@ -74,10 +78,11 @@ class MySpider(BaseSpider):
                 data = plan.select('td/span[contains(@class, "dataAllowance")]/text()').extract()
                 extras = plan.select('td/span[contains(@class, "extras")]/span/text()').extract()
 
-                print monthlyCost + minutes + messages + data + extras
+                phone_link = plan.select('.//form')
 
-                return [FormRequest(url="https://www.o2.co.uk/shop/phones/",
-                                                             callback=self.parse_phones)]
+                print monthlyCost + minutes + messages + data + extras
+                print(phone_link).extract()
+                return self.follow_form_link(form = phone_link)
 
                 #link = site.select('a/@href').extract()
                 #desc = site.select('text()').extract()
