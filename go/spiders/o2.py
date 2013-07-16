@@ -15,6 +15,13 @@ from scrapy.item import Item, Field
 from sys import exit
 import util
 
+class Plan(Item):
+    monthlyCost = Field()
+    minutes = Field()
+    messages = Field()
+    data = Field()
+    extras = Field()
+
 class MySpider(BaseSpider):
     name = 'www.o2.co.uk'
     allowed_domains = ['www.o2.co.uk']
@@ -58,7 +65,8 @@ class MySpider(BaseSpider):
     def parse(self, response):
 
         '''
-        plans page handler
+        Plans page handler.
+        This function is call-backed from the spider's initial crawl
         '''
 
         self.log('Obtained response from %s' % response.url)
@@ -72,15 +80,17 @@ class MySpider(BaseSpider):
             for plan in plans:
                 #print plan.extract()
 
-                monthlyCost = plan.select('td[contains(@class, "monthlyCost")]/text()').extract()
-                minutes = plan.select('td/span[contains(@class, "minsVal")]/text()').extract()
-                messages = plan.select('td/span[contains(@class, "textsVal")]/text()').extract()
-                data = plan.select('td/span[contains(@class, "dataAllowance")]/text()').extract()
-                extras = plan.select('td/span[contains(@class, "extras")]/span/text()').extract()
+                item = Plan()
+
+                item['monthlyCost'] = plan.select('td[contains(@class, "monthlyCost")]/text()').extract()
+                item['minutes'] = plan.select('td/span[contains(@class, "minsVal")]/text()').extract()
+                item['messages'] = plan.select('td/span[contains(@class, "textsVal")]/text()').extract()
+                item['data'] = plan.select('td/span[contains(@class, "dataAllowance")]/text()').extract()
+                item['extras'] = plan.select('td/span[contains(@class, "extras")]/span/text()').extract()
 
                 phone_link = plan.select('.//form')
 
-                print monthlyCost + minutes + messages + data + extras
+                print plan
                 print(phone_link).extract()
                 return self.follow_form_link(form = phone_link)
 
